@@ -1,9 +1,9 @@
-const { Plugin, Notice } = require("obsidian");
-const { exec } = require("child_process");
+aimport { Plugin, Notice } from "obsidian";
+import { exec } from "child_process";
+import os from "os"; // 1. Importa il modulo os
 
-module.exports = class GitRibbonSyncPlugin extends Plugin {
+export default class GitRibbonSyncPlugin extends Plugin {
   async onload() {
-    // Get the absolute file path of your Obsidian Vault
     const vaultPath = this.app.vault.adapter.getBasePath();
 
     // 1. ADD PULL BUTTON TO LEFT RIBBON
@@ -15,14 +15,20 @@ module.exports = class GitRibbonSyncPlugin extends Plugin {
     // 2. ADD COMMIT & PUSH BUTTON TO LEFT RIBBON
     this.addRibbonIcon("arrow-up-from-line", "Git Commit & Push", () => {
       new Notice("Committing and pushing changes...");
+      
       const timestamp = new Date().toISOString().slice(0, 19).replace("T", " ");
-      const command = `git add . && git commit -m "Vault sync: ${timestamp}" && git push`;
+      
+      // Recupera il nome del dispositivo (es. "mac" o l'hostname del sistema)
+      const deviceName = os.hostname().split(".")[0].toLowerCase(); 
+      
+      // Formatta il messaggio di commit
+      const commitMessage = `Vault sync: ${deviceName} ${timestamp}`;
+      const command = `git add --all -- :^.obsidian/plugins/*/.git && git commit -m "${commitMessage}" && git push`;
 
       this.runGitCommand(vaultPath, command, "Push successful!", "Push failed.");
     });
   }
 
-  // Helper method to execute shell commands in the vault root
   runGitCommand(vaultPath, command, successMsg, errorMsg) {
     exec(command, { cwd: vaultPath }, (error, stdout, stderr) => {
       if (error) {
@@ -34,4 +40,4 @@ module.exports = class GitRibbonSyncPlugin extends Plugin {
       new Notice(successMsg);
     });
   }
-};
+}
