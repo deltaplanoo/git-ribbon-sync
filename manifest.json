@@ -1,8 +1,8 @@
 {
   "id": "git-ribbon-sync",
   "name": "Git Ribbon Sync",
-  "version": "0.1.0",
-  "minAppVersion": "0.1.0",
-  "description": "Custom pull and commit/push ribbon buttons.",
+  "version": "0.1.5",
+  "minAppVersion": "1.0.0",
+  "description": "Sync vault changes: quicky pull, push, and view git history from ribbon icons and commands.",
   "isDesktopOnly": true
 }
