@@ -1,8 +1,14 @@
-import { Plugin, Notice, ItemView } from "obsidian";
+import { Plugin, Notice, ItemView, PluginSettingTab, Setting } from "obsidian";
 import { exec } from "child_process";
 import os from "os";
 
 const GIT_HISTORY_VIEW_TYPE = "git-history-view";
+
+// DEFAULT SETTINGS STRUCTURE
+const DEFAULT_SETTINGS = {
+  deviceName: os.platform() === "darwin" ? "mac" : os.hostname().split(".")[0].toLowerCase(),
+  commitPrefix: "Vault sync:",
+};
 
 class GitHistoryView extends ItemView {
   constructor(leaf, vaultPath) {
@@ -38,12 +44,12 @@ class GitHistoryView extends ItemView {
       if (error) {
         container.createEl("div", {
           text: `Errore durante il recupero dei commit: ${stderr || error.message}`,
-          cls: "notice"
+          cls: "notice",
         });
         return;
       }
 
-      const commits = stdout.split("\n").filter(line => line.trim() !== "");
+      const commits = stdout.split("\n").filter((line) => line.trim() !== "");
 
       if (commits.length === 0) {
         container.createEl("p", { text: "Nessun commit trovato nel repository." });
@@ -60,7 +66,7 @@ class GitHistoryView extends ItemView {
       commits.forEach((line) => {
         const [hash, author, date, message] = line.split("|");
         const row = table.createEl("tr");
-        
+
         row.createEl("td", { text: hash, cls: "git-hash" });
         row.createEl("td", { text: message, cls: "git-message" });
         row.createEl("td", { text: author, cls: "git-author" });
@@ -76,38 +82,69 @@ export default class GitRibbonSyncPlugin extends Plugin {
   async onload() {
     const vaultPath = this.app.vault.adapter.getBasePath();
 
-    // Registra la vista della cronologia
+    // Load Settings
+    await this.loadSettings();
+
+    // Register custom history view
     this.registerView(
       GIT_HISTORY_VIEW_TYPE,
       (leaf) => new GitHistoryView(leaf, vaultPath)
     );
 
     // =========================================================
-    // REGISTRAZIONE PULSANTI RIBBON (Tutti insieme nello stesso blocco)
+    // 1. REGISTER ACTIONS & RIBBON ICONS
     // =========================================================
 
-    // 1. Tasto PULL
-    this.addRibbonIcon("arrow-down-to-line", "Git Pull", () => {
+    const pullAction = () => {
       new Notice("Pulling changes from GitHub...");
       this.runGitCommand(vaultPath, "git pull", "Pull successful!", "Pull failed.");
-    });
+    };
 
-    // 2. Tasto COMMIT & PUSH
-    this.addRibbonIcon("arrow-up-from-line", "Git Commit & Push", () => {
+    const pushAction = () => {
       new Notice("Committing and pushing changes...");
       const timestamp = new Date().toISOString().slice(0, 19).replace("T", " ");
-      const deviceName = os.platform() === "darwin" ? "mac" : os.hostname().split(".")[0].toLowerCase();
-      
-      const commitMessage = `Vault sync: ${deviceName} ${timestamp}`;
+      const commitMessage = `${this.settings.commitPrefix} ${this.settings.deviceName} ${timestamp}`;
       const command = `git add --all -- :^.obsidian/plugins/*/.git && git commit -m "${commitMessage}" && git push`;
 
       this.runGitCommand(vaultPath, command, "Push successful!", "Push failed.");
+    };
+
+    const historyAction = () => {
+      this.activateHistoryView();
+    };
+
+    // Add Ribbon Icons
+    this.addRibbonIcon("arrow-down-to-line", "Git Pull", pullAction);
+    this.addRibbonIcon("arrow-up-from-line", "Git Commit & Push", pushAction);
+    this.addRibbonIcon("history", "Show Git History", historyAction);
+
+    // =========================================================
+    // 2. ADD COMMANDS (Enables the Hotkeys (+) Button!)
+    // =========================================================
+
+    this.addCommand({
+      id: "git-pull",
+      name: "Git Pull",
+      callback: pullAction,
     });
 
-    // 3. Tasto HISTORY (subito di seguito agli altri due)
-    this.addRibbonIcon("history", "Show Git History", () => {
-      this.activateHistoryView();
+    this.addCommand({
+      id: "git-commit-push",
+      name: "Git Commit & Push",
+      callback: pushAction,
     });
+
+    this.addCommand({
+      id: "git-show-history",
+      name: "Show Git Commit History",
+      callback: historyAction,
+    });
+
+    // =========================================================
+    // 3. ADD SETTINGS TAB (Enables the Gear Settings Button!)
+    // =========================================================
+
+    this.addSettingTab(new GitSyncSettingTab(this.app, this));
   }
 
   async activateHistoryView() {
@@ -135,5 +172,57 @@ export default class GitRibbonSyncPlugin extends Plugin {
       console.log(`Git Output: ${stdout}`);
       new Notice(successMsg);
     });
+  }
+
+  async loadSettings() {
+    this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+  }
+
+  async saveSettings() {
+    await this.saveData(this.settings);
+  }
+}
+
+// =========================================================
+// SETTINGS TAB CLASS
+// =========================================================
+
+class GitSyncSettingTab extends PluginSettingTab {
+  constructor(app, plugin) {
+    super(app, plugin);
+    this.plugin = plugin;
+  }
+
+  display() {
+    const { containerEl } = this;
+    containerEl.empty();
+
+    containerEl.createEl("h2", { text: "Git Ribbon Sync Settings" });
+
+    new Setting(containerEl)
+      .setName("Device Name")
+      .setDesc("The device name included in automated commit messages.")
+      .addText((text) =>
+        text
+          .setPlaceholder("e.g. mac, desktop, laptop")
+          .setValue(this.plugin.settings.deviceName)
+          .onChange(async (value) => {
+            this.plugin.settings.deviceName = value;
+            await this.plugin.saveSettings();
+          })
+      );
+
+    new Setting(containerEl)
+      .setName("Commit Message Prefix")
+      .setDesc("Prefix used before device name and timestamp.")
+      .addText((text) =>
+        text
+          .setPlaceholder("Vault sync:")
+          .setValue(this.plugin.settings.commitPrefix)
+          .onChange(async (value) => {
+            this.plugin.settings.commitPrefix = value;
+            await this.plugin.saveSettings();
+          })
+      );
   }
 }
