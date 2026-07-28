@@ -4,5 +4,8 @@
   "version": "0.1.5",
   "minAppVersion": "1.0.0",
   "description": "Sync vault changes: quicky pull, push, and view git history from ribbon icons and commands.",
+  "description": "Sync vault changes: quicky pull, push, and view git history from ribbon icons and commands.",
+  "author": "deltaplanoo",
+  "authorUrl": "https://github.com/deltaplanoo",
   "isDesktopOnly": true
 }
