@@ -1,0 +1,37 @@
+.git-history-container {
+  padding: 20px;
+  overflow-y: auto;
+}
+
+.git-history-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 15px;
+}
+
+.git-history-table th,
+.git-history-table td {
+  padding: 8px 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.git-history-table th {
+  background-color: var(--background-secondary);
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.git-hash {
+  font-family: var(--font-monospace);
+  color: var(--text-accent);
+}
+
+.git-message {
+  font-weight: 500;
+}
+
+.git-date, .git-author {
+  color: var(--text-muted);
+  font-size: 0.9em;
+}

@@ -1,0 +1,21 @@
+{
+  
+  "id": "git-ribbon-sync",
+  "name": "git-ribbon-sync",
+  "version": "0.1.6",
+  "minAppVersion": "1.0.0",
+  "description": "Sync vault changes: quicky pull, push, and view git history from ribbon icons and commands.",
+  "author": "deltaplanoo",
+  "authorUrl": "https://github.com/deltaplanoo",
+  "type": "module",
+  "main": "dist/main.js",
+  "scripts": {
+    "dev": "node esbuild.config.mjs",
+    "build": "node esbuild.config.mjs production"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.1",
+    "obsidian": "^1.13.1",
+    "typescript": "^7.0.2"
+  }
+}
